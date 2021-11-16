@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+    <script src="node_modules/xterm/lib/xterm.js"></script>
+    <script src="node_modules//binaryen/index.js"></script>
+</head>
+
+<body>
+    <div id="terminal"></div>
+    <script>
+    //var binaryen = require("binaryen");
+
+    // Create a module from a WebAssembly Text format
+    var myModule = binaryen.parseText(`(module
+ (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
+ (export "add" (func $add))
+ (func $add (; 0 ;) (; has Stack IR ;) (param $0 i32) (param $1 i32) (result i32)
+  (i32.add
+   (local.get $0)
+   (local.get $1)
+  )
+ )
+)`);
+
+    // Emit module in a binary format
+    var wasmData = myModule.emitBinary();
+
+    // Use WebAssembly API to instantiate a compiled module
+    var compiled = new WebAssembly.Module(wasmData);
+    var instance = new WebAssembly.Instance(compiled, {});
+
+    // And use it
+    console.log(instance.exports.add(42, 32));
+
+        var term = new Terminal({ cursorBlink: true });
+        term.open(document.getElementById('terminal'));
+        term.write('$ ');
+        term.write(instance.exports.add(42, 32).toString());
+        line = '';
+        term.onKey(key => {
+            const char = key.key;
+            line += char;
+            if (char === "\r") {
+                console.log("Enter pressed: " + line);
+                prompt();
+            } else {
+                term.write(char);
+            }
+        });
+        prompt = () => {
+            var shellprompt = "$ ";
+            term.write("\r\n" + shellprompt);
+            line = '';
+        };
+    </script>
+</body>
+
+</html>
